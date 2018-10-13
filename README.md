@@ -32,8 +32,9 @@ Create a new project folder and initialize it:
 $ rod init
 ```
 
-It'll create an empty source file called `alap.nim`; it copies my small pykot library to the
-project folder (as I use it in almost all my Nim projects); and Nim's version is staged in a text file,
+It'll create an empty source file called `alap.nim`; it copies my small
+[pykot library](https://github.com/jabbalaci/nimpykot) to the project folder
+(as I use it in almost all my Nim projects); and Nim's version is staged in a text file,
 which can be useful if your project doesn't compile with a future version of Nim.
 
 Then, I usually open the current folder in Visual Studio Code with `code .`, open `alap.nim`, and
