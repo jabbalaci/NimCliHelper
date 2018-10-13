@@ -8,6 +8,7 @@ Goal: facilitate Nim development in the command-line.
 by Laszlo Szathmary (jabba.laci@gmail.com), 2018
 """
 
+import json
 import os
 import shlex
 import shutil
@@ -16,7 +17,7 @@ from glob import glob
 from pathlib import Path
 from subprocess import PIPE, STDOUT, Popen
 
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 
 EXIT_CODE_OK = 0
 
@@ -24,6 +25,8 @@ CURRENT_DIR_NAME = Path(os.getcwd()).name
 
 # pykot is my small Python / Kotlin library, see https://github.com/jabbalaci/nimpykot
 PYKOT_LOCATION = "{home}/Dropbox/nim/NimPyKot/src/pykot.nim".format(home=os.path.expanduser("~"))
+
+VSCODE_NIM_SNIPPET = "{home}/.config/Code/User/snippets/nim.json".format(home=os.path.expanduser("~"))
 
 
 class MissingSourceFileException(Exception):
@@ -96,7 +99,25 @@ def create_alap_file():
     if os.path.isfile(fname):
         raise ExistingFileException("alap.nim exists")
     # else
-    execute_command(f"touch {fname}")
+    if not os.path.isfile(VSCODE_NIM_SNIPPET):
+        execute_command(f"touch {fname}")
+        print(f"# an empty {fname} was created")
+    else:
+        try:
+            with open(VSCODE_NIM_SNIPPET) as f:
+                doc = json.load(f)
+            body = doc['alap']['body']
+            with open(fname, "w") as to:
+                for line in body:
+                    line = line.replace("$0", "")
+                    print(line, file=to)
+            #
+            print(f"# {fname} was created using your VS Code Nim snippet")
+        except Exception as e:
+            print(f"# Warning: couldn't process the file {VSCODE_NIM_SNIPPET}", file=sys.stderr)
+            print("#", e, file=sys.stderr)
+            execute_command(f"touch {fname}")
+            print(f"# an empty {fname} was created")
 
 
 def copy_pykot():
