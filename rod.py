@@ -200,11 +200,11 @@ def run_exe(exe, params):
 
 
 def strip_exe(exe):
-    return execute_command(f"strip {exe}")
+    return execute_command(f"strip -s {exe}")
 
 
 def upx_exe(exe):
-    return execute_command(f"upx {exe}")
+    return execute_command(f"upx --best {exe}")
 
 
 def delete_exe(exe):
