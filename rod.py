@@ -100,6 +100,10 @@ def create_alap_file():
 
 
 def copy_pykot():
+    if not os.path.isfile(PYKOT_LOCATION):
+        print(f"# Warning: {PYKOT_LOCATION} was not found")
+        return
+    # else
     fname = "pykot.nim"
     if os.path.isfile(f"./{fname}"):
         print(f"# {fname} exists in the current folder, deleting it")
