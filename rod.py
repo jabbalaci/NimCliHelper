@@ -9,6 +9,7 @@ by Laszlo Szathmary (jabba.laci@gmail.com), 2018
 """
 
 import json
+from glob import glob
 import os
 import shlex
 import shutil
@@ -21,12 +22,30 @@ VERSION = "0.1.2"
 
 EXIT_CODE_OK = 0
 
+EDITOR = "vim"
+
 CURRENT_DIR_NAME = Path(os.getcwd()).name
 
 # pykot is my small Python / Kotlin library, see https://github.com/jabbalaci/nimpykot
 PYKOT_LOCATION = "{home}/Dropbox/nim/NimPyKot/src/pykot.nim".format(home=os.path.expanduser("~"))
 
 VSCODE_NIM_SNIPPET = "{home}/.config/Code/User/snippets/nim.json".format(home=os.path.expanduser("~"))
+
+NIMBLE = """
+# Package
+
+version       = "0.1.0"
+author        = "..."
+description   = "..."
+license       = "MIT"
+# srcDir        = "src"
+# bin           = @["alap"]
+
+
+# Dependencies
+
+requires "nim >= 0.19.0"
+""".strip()
 
 
 class MissingSourceFileException(Exception):
@@ -42,21 +61,24 @@ def usage():
     print("""
 Nim CLI Helper v{ver}
 =====================
-option            what it does                         notes
-------            ------------                         -----
-init              bundles the indented steps below     initialize a project folder
-  alap            touch alap.nim                       create an empty source file
-  pykot           copy pykot.nim .                     copy pykot.nim to the current dir.
-  nim_ver         nim --version > nim_version.txt      stage Nim's version in a file
-c                 nim c                                compile (debug)
-cr                nim c -r                             compile (debug) and run
-s                                                      compile, run, then delete the exe
-                                                       i.e., run it as if it were a script
-rel               nim c -d:release                     compile (release)
-small1            nim c -d:release --opt:size          small EXE
-small2            small1 + strip                       smaller EXE
-small3            small2 + upx                         smallest EXE
-ver               nim --version                        version info
+option            what it does                          notes
+------            ------------                          -----
+init              bundles the indented 3 steps below    initialize a project folder
+  alap            create alap.nim                       create a skeleton source file
+  pykot           copy pykot.nim .                      copy pykot.nim to the current dir.
+  nimble          simplified nimble init                create a simple .nimble file
+ad                edit .nimble                          add dependency
+id                nimble install -d                     install dependencies (and nothing else)
+                                                        (like `pip install -r requirements.txt`)
+c                 nim c                                 compile (debug)
+cr                nim c -r                              compile and run
+s                                                       compile, run, then delete the exe
+                                                        i.e., run it as if it were a script
+rel               nim c -d:release                      compile (release)
+small1            nim c -d:release --opt:size           small EXE
+small2            small1 + strip                        smaller EXE
+small3            small2 + upx                          smallest EXE
+ver               nim --version                         version info
 """.strip().format(ver=VERSION))
 
 
@@ -133,11 +155,16 @@ def copy_pykot():
     print(f"# {fname}'s latest version was copied to the current folder")
 
 
-def nim_ver():
-    with open("nim_version.txt", "w") as f:
-        print(get_version_info(), file=f)
+def nimble():
+    fname = "alap.nimble"
+    if os.path.isfile(f"{fname}"):
+        print(f"# Warning: {fname} already exists")
+        return
+    # else
+    with open(fname, "w") as f:
+        print(NIMBLE, file=f)
     #
-    print("# nim's version was written to a file")
+    print(f"# {fname} was created")
 
 
 def compile(args, output=True, release=False, small=False):
@@ -206,6 +233,27 @@ def small3(args):
     upx_exe(exe)
 
 
+def find_nimble_file():
+    found = glob("*.nimble")
+    if len(found) == 1:
+        return found[0]
+    # else
+    return None
+
+
+def add_dependency():
+    nimble_file = find_nimble_file()
+    if nimble_file is None:
+        print("# Error: no .nimble file was found", file=sys.stderr)
+        return
+    # else
+    execute_command(f"{EDITOR} {nimble_file}")
+
+
+def install_dependencies():
+    execute_command("nimble install -d")
+
+
 def process(args):
     param = args[0]
     params = " ".join(args[1:])
@@ -215,7 +263,7 @@ def process(args):
         try:
             create_alap_file()
             copy_pykot()
-            nim_ver()
+            nimble()
         except Exception as e:
             print("Error:", e)
     elif param == 'alap':
@@ -225,8 +273,12 @@ def process(args):
             print("Error:", e)
     elif param == 'pykot':
         copy_pykot()
-    elif param == "nim_ver":
-        nim_ver()
+    elif param == "nimble":
+        nimble()
+    elif param == "ad":
+        add_dependency()
+    elif param == "id":
+        install_dependencies()
     elif param == 'c':
         exit_code = compile(args)
     elif param == 'rel':
