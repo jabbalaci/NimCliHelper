@@ -8,7 +8,7 @@ Help
 
 ```
 $ rod
-Nim CLI Helper v0.1.0
+Nim CLI Helper v0.1.1
 =====================
 option            what it does                         notes
 ------            ------------                         -----
@@ -16,10 +16,14 @@ init              bundles the indented steps below     initialize a project fold
   alap            touch alap.nim                       create an empty source file
   pykot           copy pykot.nim .                     copy pykot.nim to the current dir.
   nim_ver         nim --version > nim_version.txt      stage Nim's version in a file
-c                 nim c                                compile
-cr                nim c -r                             compile and run
+c                 nim c                                compile (debug)
+cr                nim c -r                             compile (debug) and run
 s                                                      compile, run, then delete the exe
                                                        i.e., run it as if it were a script
+rel               nim c -d:release                     compile (release)
+small1            nim c -d:release --opt:size          small EXE
+small2            small1 + strip                       smaller EXE
+small3            small2 + upx                         smallest EXE
 ver               nim --version                        version info
 ```
 

@@ -16,7 +16,7 @@ from glob import glob
 from pathlib import Path
 from subprocess import PIPE, STDOUT, Popen
 
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 
 EXIT_CODE_OK = 0
 
@@ -45,10 +45,14 @@ init              bundles the indented steps below     initialize a project fold
   alap            touch alap.nim                       create an empty source file
   pykot           copy pykot.nim .                     copy pykot.nim to the current dir.
   nim_ver         nim --version > nim_version.txt      stage Nim's version in a file
-c                 nim c                                compile
-cr                nim c -r                             compile and run
+c                 nim c                                compile (debug)
+cr                nim c -r                             compile (debug) and run
 s                                                      compile, run, then delete the exe
                                                        i.e., run it as if it were a script
+rel               nim c -d:release                     compile (release)
+small1            nim c -d:release --opt:size          small EXE
+small2            small1 + strip                       smaller EXE
+small3            small2 + upx                         smallest EXE
 ver               nim --version                        version info
 """.strip().format(ver=VERSION))
 
@@ -111,7 +115,7 @@ def nim_ver():
     print("# nim's version was written to a file")
 
 
-def compile(args, output=True):
+def compile(args, output=True, release=False, small=False):
     options = ""
     if not output:
         options = "--hints:off --verbosity:0"
@@ -123,6 +127,10 @@ def compile(args, output=True):
         return 1
     # else
     cmd = f'nim {options} c {src}'
+    if release:
+        cmd = f'nim {options} c -d:release {src}'
+    if small:
+        cmd = f'nim {options} c -d:release --opt:size {src}'
     exit_code = execute_command(cmd)
     return exit_code
 
@@ -139,13 +147,39 @@ def run_exe(exe, params):
     return exit_code
 
 
+def strip_exe(exe):
+    return execute_command(f"strip {exe}")
+
+
+def upx_exe(exe):
+    return execute_command(f"upx {exe}")
+
+
 def delete_exe(exe):
     p = Path(exe)
     if p.exists() and p.is_file() and p.suffix != ".nim":
         # print(f"# remove {str(p)}")
         p.unlink()
     return not p.exists()
-        
+
+
+def small1(args):
+    return compile(args, release=True, small=True)
+
+
+def small2(args):
+    small1(args)
+    p = Path(args[1])
+    exe = get_exe_name(p)
+    strip_exe(exe)
+
+
+def small3(args):
+    small2(args)
+    p = Path(args[1])
+    exe = get_exe_name(p)
+    upx_exe(exe)
+
 
 def process(args):
     param = args[0]
@@ -170,6 +204,14 @@ def process(args):
         nim_ver()
     elif param == 'c':
         exit_code = compile(args)
+    elif param == 'rel':
+        exit_code = compile(args, release=True)
+    elif param == 'small1':
+        exit_code = small1(args)
+    elif param == 'small2':
+        exit_code = small2(args)
+    elif param == 'small3':
+        exit_code = small3(args)
     elif param == 'cr':
         exit_code = compile(args)
         if exit_code != EXIT_CODE_OK:

@@ -3,6 +3,5 @@ Plans
 
 * test it under Windows too
 * rewrite it in Nim
-* make it possible to create
-  + release EXE
-  + smallest EXE
+* verify if `strip` / `upx` binaries are available
+  if not: error message
