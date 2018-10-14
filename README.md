@@ -36,7 +36,7 @@ Usage
 Create a new project folder and initialize it:
 
 ```
-$ rod init
+$ rodcli init
 ```
 
 It'll create a skeleton source file called `alap.nim`, it copies my small
@@ -51,7 +51,7 @@ I insert some Nim code that creates a basic skeleton that is compilable.
 Compile and run:
 
 ```
-$ rod cr alap.nim
+$ rodcli cr alap.nim
 ```
 
 Notes
