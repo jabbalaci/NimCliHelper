@@ -3,6 +3,7 @@ import strformat
 import sequtils
 import os
 import osproc
+import json
 
 func rstrip(s: string, chars: string): string =
   # Strips trailing chars from s and returns the resulting string.
@@ -12,7 +13,7 @@ func rstrip(s: string, chars: string): string =
   s.strip(leading=false, trailing=true, chars=bs)
 
 const
-  VERSION = "0.1.2"
+  VERSION = "0.1.3"
   EXIT_CODE_OK = 0
   EDITOR = "vim"
   HOME = getHomeDir().rstrip("/")
@@ -151,7 +152,28 @@ proc compile_run_delete_exe(args: seq[string]): int =
   return 1
 
 proc create_alap_file(): int =
-  execute_command("touch alap.nim")
+  let fname = "alap.nim"
+
+  if existsFile(fname):
+    echo &"# Warning: {fname} already exists"
+    return 1
+  # else, if alap.nim doest't exist
+  if not existsFile(VSCODE_NIM_SNIPPET):
+    result = execute_command(&"touch {fname}")
+    echo &"# an empty {fname} was created"
+  else:
+    try:
+      let
+        parsed = parseFile(VSCODE_NIM_SNIPPET)
+        snippet = parsed["alap"]["body"].mapIt(it.str).join("\n").replace("$0", "")
+
+      writeFile(fname, snippet)
+      echo &"# {fname} was created using your VS Code Nim snippet"
+      result = EXIT_CODE_OK
+    except:
+      echo &"# Warning: couldn't process the file {VSCODE_NIM_SNIPPET}"
+      result = execute_command(&"touch {fname}")
+      echo &"# an empty {fname} was created"
 
 proc copy_pykot(): int =
   if not existsFile(PYKOT_LOCATION):
