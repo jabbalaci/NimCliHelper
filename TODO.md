@@ -1,7 +1,6 @@
 Plans
 -----
 
-* rewrite it in Nim
 * port it under Windows too
 * verify if `strip` / `upx` binaries are available
   + if not: error message

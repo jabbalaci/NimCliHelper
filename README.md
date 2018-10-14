@@ -1,5 +1,5 @@
-Nim CLI Helper
-==============
+RodCli: a Nim CLI Helper
+========================
 
 Goal: facilitate Nim development in the command-line
 
@@ -7,27 +7,27 @@ Help
 ----
 
 ```
-$ rod
-Nim CLI Helper v0.1.2
-=====================
-option            what it does                          notes
-------            ------------                          -----
-init              bundles the indented 3 steps below    initialize a project folder
-  alap            create alap.nim                       create a skeleton source file
-  pykot           copy pykot.nim .                      copy pykot.nim to the current dir.
-  nimble          simplified nimble init                create a simple .nimble file
-ad                edit .nimble                          add dependency
-id                nimble install -d                     install dependencies (and nothing else)
-                                                        (like `pip install -r requirements.txt`)
-c                 nim c                                 compile (debug)
-cr                nim c -r                              compile and run
-s                                                       compile, run, then delete the exe
-                                                        i.e., run it as if it were a script
-rel               nim c -d:release                      compile (release)
-small1            nim c -d:release --opt:size           small EXE
-small2            small1 + strip                        smaller EXE
-small3            small2 + upx                          smallest EXE
-ver               nim --version                         version info
+$ rodcli
+RodCli, a Nim CLI Helper v0.1.2
+===============================
+ option               what it does                                notes
+--------    ----------------------------------    ----------------------------------------
+init        bundles the indented 3 steps below    initialize a project folder
+  alap      create alap.nim                       create a skeleton source file
+  pykot     copy pykot.nim .                      copy pykot.nim to the current dir.
+  nimble    simplified nimble init                create a simple .nimble file
+ad          edit .nimble                          add dependency
+id          nimble install -d                     install dependencies (and nothing else)
+                                                  (like `pip install -r requirements.txt`)
+c           nim c                                 compile (debug)
+cr          nim c -r                              compile and run
+s                                                 compile, run, then delete the exe
+                                                  i.e., run it as if it were a script
+rel         nim c -d:release                      compile (release)
+small1      nim c -d:release --opt:size           small EXE
+small2      small1 + strip                        smaller EXE
+small3      small2 + upx                          smallest EXE
+ver         nim --version                         version info
 ```
 
 Usage
