@@ -8,7 +8,7 @@ Help
 
 ```
 $ rodcli
-RodCli, a Nim CLI Helper v0.1.2
+RodCli, a Nim CLI Helper v0.1.3
 ===============================
  option               what it does                                notes
 --------    ----------------------------------    ----------------------------------------
