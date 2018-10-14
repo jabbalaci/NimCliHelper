@@ -1,6 +1,8 @@
 Plans
 -----
 
-* test it under Windows too
+* rewrite it in Nim
+* port it under Windows too
 * verify if `strip` / `upx` binaries are available
-  if not: error message
+  + if not: error message
+  + does `strip` exist for Windows?
