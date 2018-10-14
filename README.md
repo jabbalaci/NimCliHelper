@@ -57,4 +57,6 @@ $ rodcli cr alap.nim
 Notes
 -----
 
+Currently it was only tested under Linux. I want to add Windows support too.
+
 The word "alap" means "basic" in Hungarian. So if you want, you can rename `alap.nim` to `basic.nim`.
