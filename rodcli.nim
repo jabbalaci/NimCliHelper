@@ -1,9 +1,10 @@
-import strutils
-import strformat
-import sequtils
+import httpclient
+import json
 import os
 import osproc
-import json
+import sequtils
+import strformat
+import strutils
 
 func rstrip(s: string, chars: string): string =
   # Strips trailing chars from s and returns the resulting string.
@@ -13,7 +14,7 @@ func rstrip(s: string, chars: string): string =
   s.strip(leading=false, trailing=true, chars=bs)
 
 const
-  VERSION = "0.1.5"
+  VERSION = "0.1.6"
   REQUIRED_NIM_VERSION = "nim >= 0.19.0"    # goes in the .nimble file
   BASIC = "basic"
   EXIT_CODE_OK = 0
@@ -25,6 +26,7 @@ const
       "vim"
   HOME = getHomeDir().rstrip("/")
   PYKOT_LOCATION = &"{HOME}/Dropbox/nim/NimPyKot/src/pykot.nim"
+  PYKOT_URL = "https://raw.githubusercontent.com/jabbalaci/nimpykot/master/src/pykot.nim"
   VSCODE_NIM_SNIPPET = &"{HOME}/.config/Code/User/snippets/nim.json"
 
 const NIMBLE = """
@@ -58,10 +60,10 @@ c           nim c                                 compile (debug) [alias: compil
 cr          nim c -r                              compile and run
 s                                                 compile, run, then delete the exe, i.e.
                                                   run it as if it were a script [alias: script]
-rel         nim c -d:release                      compile (release) [alias: release]
-s1          nim c -d:release --opt:size           small EXE [alias: small1]
-s2          small1 + strip                        smaller EXE [alias: small2]
-s3          small2 + upx                          smallest EXE [alias: small3]
+rel         nim c -d:release                      compile [alias: release]
+sm1         nim c -d:release --opt:size           small EXE [alias: small1]
+sm2         sm1 + strip                           smaller EXE [alias: small2]
+sm3         sm2 + upx                             smallest EXE [alias: small3]
 ver         nim --version                         version info [aliases: v, version]
 """.format(VERSION).strip
 
@@ -83,6 +85,25 @@ proc which(fname: string): string =
   #
   return ""    # not found
 
+proc get_page(url: string): string =
+  # Fetch a web page and return its content.
+  # In case of error, return an empty string.
+  let client = newHttpClient()
+  try:
+    client.getContent(url)
+  except:
+    ""
+
+proc touch(fname: string): bool =
+  # Create an empty file if the file doesn't exist.
+  # Return true, if the file exists.
+  # Return false, if the empty file was not created.
+  if existsFile(fname):
+    return true
+  # else
+  writeFile(fname, "")
+  existsFile(fname)
+
 proc execute_command(cmd: seq[string], verify = false, debug = true, sep = false): int =
   # Execute a simple external command and return its exit status.
   var cmd = cmd    # shadowing
@@ -97,9 +118,9 @@ proc execute_command(cmd: seq[string], verify = false, debug = true, sep = false
 
   if verify:
     let path = which(prg)
-    echo &"path: {path}"
     if path == "":
-      echo &"# Warning: the command {prg} was not found. Maybe not installed?"
+      echo &"# Warning: the command {prg} was not found"
+      echo "# Tip: make sure it's installed and it's in your PATH"
       return 1
     
   if debug:
@@ -207,9 +228,10 @@ proc create_basic_file(name=BASIC): int =
     return 1
   # else, if basic.nim doest't exist
   if not existsFile(VSCODE_NIM_SNIPPET):
-    let cmd = &"touch {fname}"
-    result = execute_command(cmd.split)
-    echo &"# an empty {fname} was created"
+    if touch(fname):
+      echo &"# an empty {fname} was created"
+    else:
+      echo &"# Warning! The empty file {fname} was NOT created."
   else:
     try:
       let
@@ -221,22 +243,27 @@ proc create_basic_file(name=BASIC): int =
       result = EXIT_CODE_OK
     except:
       echo &"# Warning: couldn't process the file {VSCODE_NIM_SNIPPET}"
-      let cmd = &"touch {fname}"
-      result = execute_command(cmd.split)
-      echo &"# an empty {fname} was created"
+      if touch(fname):
+        echo &"# an empty {fname} was created"
+      else:
+        echo &"# Warning! The empty file {fname} was NOT created."
 
 proc copy_pykot(): int =
-  if not existsFile(PYKOT_LOCATION):
-    echo &"# Warning: {PYKOT_LOCATION} was not found"
-    return 1
-  # else
   let fname = "pykot.nim"
-  if existsFile(fname):
-      echo &"# {fname} exists in the current folder, deleting it"
-      removeFile &"./{fname}"
-  copyFile(PYKOT_LOCATION, &"./{fname}")
-  echo &"# {fname}'s latest version was copied to the current folder"
-  EXIT_CODE_OK
+
+  if existsFile(PYKOT_LOCATION):
+    copyFile(PYKOT_LOCATION, fname)
+    echo &"# {fname} was copied to the current folder"
+    result = EXIT_CODE_OK
+  else:    # not found in the local file system
+    let text = get_page(PYKOT_URL)
+    if text == "":
+      echo &"# Warning! {PYKOT_URL} couldn't be downloaded"
+      result = 1
+    else:
+      writeFile(fname, text)
+      echo &"# {fname} was downloaded"
+      result = EXIT_CODE_OK
 
 proc nimble(name=BASIC): int =
   let fname = &"{name}.nimble"
@@ -306,11 +333,11 @@ proc process(args: seq[string]): int =
       exit_code = run_exe(exe, args[2 .. args.high])
     of "rel", "release":
       exit_code = compile(args, release=true)
-    of "s1", "small1":
+    of "sm1", "small1":
       exit_code = small1(args)
-    of "s2", "small2":
+    of "sm2", "small2":
       exit_code = small2(args)
-    of "s3", "small3":
+    of "sm3", "small3":
       exit_code = small3(args)
     of "s", "script":
       exit_code = compile_run_delete_exe(args)
