@@ -17,7 +17,12 @@ const
   REQUIRED_NIM_VERSION = "nim >= 0.19.0"    # goes in the .nimble file
   BASIC = "basic"
   EXIT_CODE_OK = 0
-  EDITOR = "vim"
+  EDITOR =
+    if defined(windows):
+      "notepad++"    # to use it, add Notepad++'s folder to the PATH
+                     # I wanted to use "code" here, but Windows didn't want to launch it
+    else:
+      "vim"
   HOME = getHomeDir().rstrip("/")
   PYKOT_LOCATION = &"{HOME}/Dropbox/nim/NimPyKot/src/pykot.nim"
   VSCODE_NIM_SNIPPET = &"{HOME}/.config/Code/User/snippets/nim.json"
@@ -66,13 +71,43 @@ ver         nim --version                         version info [aliases: v, vers
 proc help() =
     echo HELP
 
-proc execute_command(cmd: string, debug = true, sep = false): int =
+proc which(fname: string): string =
+  let
+    sep = if defined(windows): ";" else: ":"
+    dirs = getEnv("PATH").split(sep)
+
+  for dir in dirs:
+    let path = joinPath(dir, fname)
+    if existsFile(path):
+      return path
+  #
+  return ""    # not found
+
+proc execute_command(cmd: seq[string], verify = false, debug = true, sep = false): int =
   # Execute a simple external command and return its exit status.
+  var cmd = cmd    # shadowing
+
+  if defined(windows):
+    if not cmd[0].endsWith(".exe"):
+      cmd[0] &= ".exe"
+
+  let
+    prg = cmd[0]
+    cmdString = cmd.join(" ")
+
+  if verify:
+    let path = which(prg)
+    echo &"path: {path}"
+    if path == "":
+      echo &"# Warning: the command {prg} was not found. Maybe not installed?"
+      return 1
+    
   if debug:
-    echo &"# {cmd}"
+    echo &"# {cmdString}"
   if sep:
     echo "-".repeat(78)
-  execCmd(cmd)
+
+  execCmd(cmdString)
 
 proc get_simple_cmd_output(cmd: string): string =
   # Execute a simple external command and get its output.
@@ -99,20 +134,25 @@ proc compile(args: seq[string], output = true, release = false, small = false): 
   if small:
       cmd = &"nim {options} c -d:release --opt:size {src}"
   #
-  execute_command(cmd)
+  execute_command(cmd.split)
 
 proc strip_exe(exe: string): int =
-  execute_command(&"strip -s {exe}")
+  let cmd = &"strip -s {exe}"
+  execute_command(cmd.split, verify=true)
 
 proc upx_exe(exe: string): int =
-  execute_command(&"upx --best {exe}")
+  let cmd = &"upx --best {exe}"
+  execute_command(cmd.split, verify=true)
 
 proc small1(args: seq[string]): int =
   compile(args, release=true, small=true)
 
 func get_exe_name(sourceFileName: string): string =
   let (dir, exe, ext) = splitFile(sourceFileName)
-  exe
+  if defined(windows):
+    &"{exe}.exe"
+  else:
+    exe
 
 proc small2(args: seq[string]): int =
   discard small1(args)
@@ -130,9 +170,13 @@ proc version_info() =
 proc run_exe(exe: string, params: seq[string]): int =
   let
     params = params.join()
-    cmd = &"./{exe} {params}"
+    cmd =
+      if defined(windows):
+        &"{exe} {params}"
+      else:
+        &"./{exe} {params}"
   #
-  execute_command(cmd, sep=true)
+  execute_command(cmd.split, sep=true)
 
 proc delete_exe(exe: string): bool =
   # Return true if deleting the file was successful.
@@ -163,7 +207,8 @@ proc create_basic_file(name=BASIC): int =
     return 1
   # else, if basic.nim doest't exist
   if not existsFile(VSCODE_NIM_SNIPPET):
-    result = execute_command(&"touch {fname}")
+    let cmd = &"touch {fname}"
+    result = execute_command(cmd.split)
     echo &"# an empty {fname} was created"
   else:
     try:
@@ -176,7 +221,8 @@ proc create_basic_file(name=BASIC): int =
       result = EXIT_CODE_OK
     except:
       echo &"# Warning: couldn't process the file {VSCODE_NIM_SNIPPET}"
-      result = execute_command(&"touch {fname}")
+      let cmd = &"touch {fname}"
+      result = execute_command(cmd.split)
       echo &"# an empty {fname} was created"
 
 proc copy_pykot(): int =
@@ -214,11 +260,13 @@ proc add_dependency(): int =
     echo "Error: one (and only one) .nimble file is required"
     return 1
   # else
-  let nimble_file = files[0]
-  execute_command(&"{EDITOR} {nimble_file}")
+  let
+    nimble_file = files[0]
+    cmd = &"{EDITOR} {nimble_file}"
+  execute_command(cmd.split, verify=true)
 
 proc install_dependencies(): int =
-  execute_command("nimble install -d")
+  execute_command("nimble install -d".split)
 
 proc process(args: seq[string]): int =
   let
