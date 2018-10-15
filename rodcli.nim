@@ -14,6 +14,8 @@ func rstrip(s: string, chars: string): string =
 
 const
   VERSION = "0.1.5"
+  REQUIRED_NIM_VERSION = "nim >= 0.19.0"    # goes in the .nimble file
+  BASIC = "basic"
   EXIT_CODE_OK = 0
   EDITOR = "vim"
   HOME = getHomeDir().rstrip("/")
@@ -28,23 +30,22 @@ author        = "..."
 description   = "..."
 license       = "MIT"
 # srcDir        = "src"
-# bin           = @["alap"]
+# bin           = @["$1"]
 
 
 # Dependencies
 
-requires "nim >= 0.19.0"
-""".strip
+requires "$2"
+""".format(BASIC, REQUIRED_NIM_VERSION).strip
 
 const HELP = """
 RodCli, a Nim CLI Helper v$1
 ===============================
  option               what it does                                notes
 --------    ----------------------------------    ----------------------------------------
-init        bundles the indented 3 steps below    initialize a project folder
-  alap      create alap.nim                       create a skeleton source file
-  pykot     copy pykot.nim .                      copy pykot.nim to the current dir.
-  nimble    simplified nimble init                create a simple .nimble file
+init        bundles the indented 2 steps below    initialize a project folder
+  basic     create basic.nim                      create a basic skeleton source file
+  nimble    simplified nimble init                create a simple basic.nimble file
 ad          edit .nimble                          add dependency
 id          nimble install -d                     install dependencies (and nothing else)
                                                   (like `pip install -r requirements.txt`)
@@ -53,11 +54,14 @@ cr          nim c -r                              compile and run
 s                                                 compile, run, then delete the exe, i.e.
                                                   run it as if it were a script [alias: script]
 rel         nim c -d:release                      compile (release) [alias: release]
-small1      nim c -d:release --opt:size           small EXE [alias: s1]
-small2      small1 + strip                        smaller EXE [alias: s2]
-small3      small2 + upx                          smallest EXE [alias: s3]
+s1          nim c -d:release --opt:size           small EXE [alias: small1]
+s2          small1 + strip                        smaller EXE [alias: small2]
+s3          small2 + upx                          smallest EXE [alias: small3]
 ver         nim --version                         version info [aliases: v, version]
 """.format(VERSION).strip
+
+# hide it, don't force my own library on the others :)
+# pykot       copy pykot.nim .                      copy pykot.nim to the current dir.
 
 proc help() =
     echo HELP
@@ -151,13 +155,13 @@ proc compile_run_delete_exe(args: seq[string]): int =
   # else
   return 1
 
-proc create_alap_file(): int =
-  let fname = "alap.nim"
+proc create_basic_file(name=BASIC): int =
+  let fname = &"{name}.nim"
 
   if existsFile(fname):
     echo &"# Warning: {fname} already exists"
     return 1
-  # else, if alap.nim doest't exist
+  # else, if basic.nim doest't exist
   if not existsFile(VSCODE_NIM_SNIPPET):
     result = execute_command(&"touch {fname}")
     echo &"# an empty {fname} was created"
@@ -188,13 +192,19 @@ proc copy_pykot(): int =
   echo &"# {fname}'s latest version was copied to the current folder"
   EXIT_CODE_OK
 
-proc nimble(): int =
-  let fname = "alap.nimble"
+proc nimble(name=BASIC): int =
+  let fname = &"{name}.nimble"
+
   if existsFile(fname):
-      echo &"# Warning: {fname} already exists"
-      return 1
-  # else
-  writeFile(fname, NIMBLE)
+    echo &"# Warning: {fname} already exists"
+    return 1
+  
+  # else, the .nimble file doesn't exist
+  var text = NIMBLE
+  if name != BASIC:
+    text = text.replace(BASIC, name)
+  
+  writeFile(fname, text)
   echo &"# {fname} was created"
   EXIT_CODE_OK
 
@@ -220,16 +230,19 @@ proc process(args: seq[string]): int =
   case param:
     of "ver", "v", "version":
       version_info()
-    of "alap":
-      exit_code = create_alap_file()
+    of "basic", "alap":
+      exit_code = create_basic_file(name=param)
     of "pykot":
       exit_code = copy_pykot()
     of "nimble":
       exit_code = nimble()
     of "init":
-      discard create_alap_file()
-      discard copy_pykot()
+      discard create_basic_file()
       discard nimble()
+    of "jabba":    # an undocumented option for the author of the package :)
+      discard create_basic_file(name="alap")
+      discard copy_pykot()
+      discard nimble(name="alap")
     of "ad":
       exit_code = add_dependency()
     of "id":
@@ -245,11 +258,11 @@ proc process(args: seq[string]): int =
       exit_code = run_exe(exe, args[2 .. args.high])
     of "rel", "release":
       exit_code = compile(args, release=true)
-    of "small1", "s1":
+    of "s1", "small1":
       exit_code = small1(args)
-    of "small2", "s2":
+    of "s2", "small2":
       exit_code = small2(args)
-    of "small3", "s3":
+    of "s3", "small3":
       exit_code = small3(args)
     of "s", "script":
       exit_code = compile_run_delete_exe(args)

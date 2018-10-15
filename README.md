@@ -1,7 +1,7 @@
 RodCli: a Nim CLI Helper
 ========================
 
-Goal: facilitate Nim development in the command-line
+Goal: make Nim development easier in the command-line
 
 Help
 ----
@@ -12,10 +12,9 @@ RodCli, a Nim CLI Helper v0.1.5
 ===============================
  option               what it does                                notes
 --------    ----------------------------------    ----------------------------------------
-init        bundles the indented 3 steps below    initialize a project folder
-  alap      create alap.nim                       create a skeleton source file
-  pykot     copy pykot.nim .                      copy pykot.nim to the current dir.
-  nimble    simplified nimble init                create a simple .nimble file
+init        bundles the indented 2 steps below    initialize a project folder
+  basic     create basic.nim                      create a basic skeleton source file
+  nimble    simplified nimble init                create a simple basic.nimble file
 ad          edit .nimble                          add dependency
 id          nimble install -d                     install dependencies (and nothing else)
                                                   (like `pip install -r requirements.txt`)
@@ -24,9 +23,9 @@ cr          nim c -r                              compile and run
 s                                                 compile, run, then delete the exe, i.e.
                                                   run it as if it were a script [alias: script]
 rel         nim c -d:release                      compile (release) [alias: release]
-small1      nim c -d:release --opt:size           small EXE [alias: s1]
-small2      small1 + strip                        smaller EXE [alias: s2]
-small3      small2 + upx                          smallest EXE [alias: s3]
+s1          nim c -d:release --opt:size           small EXE [alias: small1]
+s2          small1 + strip                        smaller EXE [alias: small2]
+s3          small2 + upx                          smallest EXE [alias: small3]
 ver         nim --version                         version info [aliases: v, version]
 ```
 
@@ -39,24 +38,21 @@ Create a new project folder and initialize it:
 $ rodcli init
 ```
 
-It'll create a skeleton source file called `alap.nim`, it copies my small
-[pykot library](https://github.com/jabbalaci/nimpykot) to the project folder
-(as I use it in almost all my Nim projects), and a simplified `.nimble` file
-is also created.
+It creates two files:
+* an empty `basic.nim` for your source code
+* a simplified `basic.nimble`
 
-Then, I usually open the current folder in Visual Studio Code with `code .`, open `alap.nim`, and
+Then, I usually open the current folder in Visual Studio Code with `code .`, open `basic.nim`, and
 using a [code snippet](https://github.com/jabbalaci/dotfiles/blob/master/.config/Code/User/snippets/nim.json),
 I insert some Nim code that creates a basic skeleton that is compilable.
 
 Compile and run:
 
 ```
-$ rodcli cr alap.nim
+$ rodcli cr basic.nim
 ```
 
 Notes
 -----
 
 Currently it was only tested under Linux. I want to add Windows support too.
-
-The word "alap" means "basic" in Hungarian. So if you want, you can rename `alap.nim` to `basic.nim`.
