@@ -106,3 +106,4 @@ venv.bak/
 # nim
 rodcli
 rodcli.exe
+compile.sh

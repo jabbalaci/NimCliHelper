@@ -48,15 +48,15 @@ init        bundles the indented 3 steps below    initialize a project folder
 ad          edit .nimble                          add dependency
 id          nimble install -d                     install dependencies (and nothing else)
                                                   (like `pip install -r requirements.txt`)
-c           nim c                                 compile (debug)
+c           nim c                                 compile (debug) [alias: compile]
 cr          nim c -r                              compile and run
-s                                                 compile, run, then delete the exe
-                                                  i.e., run it as if it were a script
-rel         nim c -d:release                      compile (release)
-small1      nim c -d:release --opt:size           small EXE
-small2      small1 + strip                        smaller EXE
-small3      small2 + upx                          smallest EXE
-ver         nim --version                         version info
+s                                                 compile, run, then delete the exe, i.e.
+                                                  run it as if it were a script [alias: script]
+rel         nim c -d:release                      compile (release) [alias: release]
+small1      nim c -d:release --opt:size           small EXE [alias: s1]
+small2      small1 + strip                        smaller EXE [alias: s2]
+small3      small2 + upx                          smallest EXE [alias: s3]
+ver         nim --version                         version info [aliases: v, version]
 """.format(VERSION).strip
 
 proc help() =
@@ -217,44 +217,45 @@ proc process(args: seq[string]): int =
     
   var exit_code = 0
 
-  if param == "ver":
-    version_info()
-  elif param == "alap":
-    exit_code = create_alap_file()
-  elif param == "pykot":
-    exit_code = copy_pykot()
-  elif param == "nimble":
-    exit_code = nimble()
-  elif param == "init":
-    discard create_alap_file()
-    discard copy_pykot()
-    discard nimble()
-  elif param == "ad":
-    exit_code = add_dependency()
-  elif param == "id":
-    exit_code = install_dependencies()
-  elif param == "c":
-    exit_code = compile(args)
-  elif param == "cr":
-    exit_code = compile(args)
-    if exit_code != EXIT_CODE_OK:
-        return exit_code
-    # else
-    let exe = get_exe_name(args[1])
-    exit_code = run_exe(exe, args[2 .. args.high])
-  elif param == "rel":
-    exit_code = compile(args, release=true)
-  elif param == "small1":
-    exit_code = small1(args)
-  elif param == "small2":
-    exit_code = small2(args)
-  elif param == "small3":
-    exit_code = small3(args)
-  elif param == "s":
-    exit_code = compile_run_delete_exe(args)
-  else:
-    echo "Error: unknown parameter"
-    exit_code = 1
+  case param:
+    of "ver", "v", "version":
+      version_info()
+    of "alap":
+      exit_code = create_alap_file()
+    of "pykot":
+      exit_code = copy_pykot()
+    of "nimble":
+      exit_code = nimble()
+    of "init":
+      discard create_alap_file()
+      discard copy_pykot()
+      discard nimble()
+    of "ad":
+      exit_code = add_dependency()
+    of "id":
+      exit_code = install_dependencies()
+    of "c", "compile":
+      exit_code = compile(args)
+    of "cr":
+      exit_code = compile(args)
+      if exit_code != EXIT_CODE_OK:
+          return exit_code
+      # else
+      let exe = get_exe_name(args[1])
+      exit_code = run_exe(exe, args[2 .. args.high])
+    of "rel", "release":
+      exit_code = compile(args, release=true)
+    of "small1", "s1":
+      exit_code = small1(args)
+    of "small2", "s2":
+      exit_code = small2(args)
+    of "small3", "s3":
+      exit_code = small3(args)
+    of "s", "script":
+      exit_code = compile_run_delete_exe(args)
+    else:
+      echo "Error: unknown parameter"
+      exit_code = 1
 
   exit_code
 
