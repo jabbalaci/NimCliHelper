@@ -8,7 +8,7 @@ Help
 
 ```
 $ rodcli
-RodCli, a Nim CLI Helper v0.1.4
+RodCli, a Nim CLI Helper v0.1.5
 ===============================
  option               what it does                                notes
 --------    ----------------------------------    ----------------------------------------
@@ -19,15 +19,15 @@ init        bundles the indented 3 steps below    initialize a project folder
 ad          edit .nimble                          add dependency
 id          nimble install -d                     install dependencies (and nothing else)
                                                   (like `pip install -r requirements.txt`)
-c           nim c                                 compile (debug)
+c           nim c                                 compile (debug) [alias: compile]
 cr          nim c -r                              compile and run
-s                                                 compile, run, then delete the exe
-                                                  i.e., run it as if it were a script
-rel         nim c -d:release                      compile (release)
-small1      nim c -d:release --opt:size           small EXE
-small2      small1 + strip                        smaller EXE
-small3      small2 + upx                          smallest EXE
-ver         nim --version                         version info
+s                                                 compile, run, then delete the exe, i.e.
+                                                  run it as if it were a script [alias: script]
+rel         nim c -d:release                      compile (release) [alias: release]
+small1      nim c -d:release --opt:size           small EXE [alias: s1]
+small2      small1 + strip                        smaller EXE [alias: s2]
+small3      small2 + upx                          smallest EXE [alias: s3]
+ver         nim --version                         version info [aliases: v, version]
 ```
 
 Usage

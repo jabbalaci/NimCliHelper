@@ -13,7 +13,7 @@ func rstrip(s: string, chars: string): string =
   s.strip(leading=false, trailing=true, chars=bs)
 
 const
-  VERSION = "0.1.4"
+  VERSION = "0.1.5"
   EXIT_CODE_OK = 0
   EDITOR = "vim"
   HOME = getHomeDir().rstrip("/")
