@@ -6,6 +6,13 @@ import sequtils
 import strformat
 import strutils
 
+func lstrip(s: string, chars: string): string =
+  # Strips leading chars from s and returns the resulting string.
+  var bs: set[char] = {}
+  for c in chars:
+    bs = bs + {c}
+  s.strip(leading=true, trailing=false, chars=bs)
+
 func rstrip(s: string, chars: string): string =
   # Strips trailing chars from s and returns the resulting string.
   var bs: set[char] = {}
@@ -43,7 +50,17 @@ license       = "MIT"
 # Dependencies
 
 requires "$2"
-""".format(BASIC, REQUIRED_NIM_VERSION).strip
+""".format(BASIC, REQUIRED_NIM_VERSION).lstrip("\n")
+
+const BASIC_NIM_SOURCE = """
+proc main() =
+  echo "hello world"
+
+# ###########################################################################
+
+when isMainModule:
+  main()
+""".lstrip("\n")
 
 const HELP = """
 RodCli, a Nim CLI Helper v$1
@@ -65,13 +82,25 @@ sm1         nim c -d:release --opt:size           small EXE [alias: small1]
 sm2         sm1 + strip                           smaller EXE [alias: small2]
 sm3         sm2 + upx                             smallest EXE [alias: small3]
 ver         nim --version                         version info [aliases: v, version]
+h           help                                  more detailed help [alias: -h]
 """.format(VERSION).strip
+
+const FULL_HELP = """
+alap        create alap.nim                       like basic.nim but with a different name
+pykot       download pykot.nim                    a small Python / Kotlin -like library
+jabba       alap + pykot + nimble                 bundles 3 steps
+""".strip
 
 # hide it, don't force my own library on the others :)
 # pykot       copy pykot.nim .                      copy pykot.nim to the current dir.
 
 proc help() =
     echo HELP
+
+proc full_help() =
+  echo HELP
+  echo ""
+  echo FULL_HELP
 
 proc which(fname: string): string =
   let
@@ -93,16 +122,6 @@ proc get_page(url: string): string =
     client.getContent(url)
   except:
     ""
-
-proc touch(fname: string): bool =
-  # Create an empty file if the file doesn't exist.
-  # Return true, if the file exists.
-  # Return false, if the empty file was not created.
-  if existsFile(fname):
-    return true
-  # else
-  writeFile(fname, "")
-  existsFile(fname)
 
 proc execute_command(cmd: seq[string], verify = false, debug = true, sep = false): int =
   # Execute a simple external command and return its exit status.
@@ -143,7 +162,7 @@ proc compile(args: seq[string], output = true, release = false, small = false): 
   if not output:
       options = "--hints:off --verbosity:0"
   try:
-      src = args[1]
+      src = args[1]    # We need boundChecks for this! (added to config.nims)
   except:
       stderr.writeLine "Error: provide the source file too!"
       stderr.writeLine "Tip: rod c <input.nim>"
@@ -228,10 +247,8 @@ proc create_basic_file(name=BASIC): int =
     return 1
   # else, if basic.nim doest't exist
   if not existsFile(VSCODE_NIM_SNIPPET):
-    if touch(fname):
-      echo &"# an empty {fname} was created"
-    else:
-      echo &"# Warning! The empty file {fname} was NOT created."
+    writeFile(fname, BASIC_NIM_SOURCE)
+    echo &"# a basic {fname} was created"
   else:
     try:
       let
@@ -243,11 +260,9 @@ proc create_basic_file(name=BASIC): int =
       result = EXIT_CODE_OK
     except:
       echo &"# Warning: couldn't process the file {VSCODE_NIM_SNIPPET}"
-      if touch(fname):
-        echo &"# an empty {fname} was created"
-      else:
-        echo &"# Warning! The empty file {fname} was NOT created."
-
+      writeFile(fname, BASIC_NIM_SOURCE)
+      echo &"# a basic {fname} was created"
+  
 proc copy_pykot(): int =
   let fname = "pykot.nim"
 
@@ -305,9 +320,11 @@ proc process(args: seq[string]): int =
   case param:
     of "ver", "v", "version":
       version_info()
+    of "h", "-h":
+      full_help()
     of "basic", "alap":
       exit_code = create_basic_file(name=param)
-    of "pykot":
+    of "pykot":    # visible only in fullhelp
       exit_code = copy_pykot()
     of "nimble":
       exit_code = nimble()
