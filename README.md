@@ -49,6 +49,21 @@ Compile and run:
 $ rodcli cr basic.nim
 ```
 
+Installation
+------------
+
+```bash
+$ nimble install rodcli
+```
+
+To install the latest development version, issue the following command:
+
+```bash
+$ nimble install "https://github.com/jabbalaci/NimCliHelper@#head"
+```
+
+With `nimble uninstall rodcli` you can remove the package.
+
 Supported platforms
 -------------------
 
