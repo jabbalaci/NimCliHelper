@@ -1,4 +1,3 @@
-import httpclient
 import json
 import os
 import osproc
@@ -21,7 +20,7 @@ func rstrip(s: string, chars: string): string =
   s.strip(leading=false, trailing=true, chars=bs)
 
 const
-  VERSION = "0.1.6"
+  VERSION = "0.1.7"
   REQUIRED_NIM_VERSION = "nim >= 0.19.0"    # goes in the .nimble file
   BASIC = "basic"
   EXIT_CODE_OK = 0
@@ -32,8 +31,7 @@ const
     else:
       "vim"
   HOME = getHomeDir().rstrip("/")
-  PYKOT_LOCATION = &"{HOME}/Dropbox/nim/NimPyKot/src/pykot.nim"
-  PYKOT_URL = "https://raw.githubusercontent.com/jabbalaci/nimpykot/master/src/pykot.nim"
+  PYKOT_DIR_LOCATION = &"{HOME}/Dropbox/nim/NimPyKot/src"
   VSCODE_NIM_SNIPPET = &"{HOME}/.config/Code/User/snippets/nim.json"
 
 const NIMBLE = """
@@ -113,15 +111,6 @@ proc which(fname: string): string =
       return path
   #
   return ""    # not found
-
-proc get_page(url: string): string =
-  # Fetch a web page and return its content.
-  # In case of error, return an empty string.
-  let client = newHttpClient()
-  try:
-    client.getContent(url)
-  except:
-    ""
 
 proc execute_command(cmd: seq[string], verify = false, debug = true, sep = false): int =
   # Execute a simple external command and return its exit status.
@@ -264,21 +253,13 @@ proc create_basic_file(name=BASIC): int =
       echo &"# a basic {fname} was created"
   
 proc copy_pykot(): int =
-  let fname = "pykot.nim"
-
-  if existsFile(PYKOT_LOCATION):
-    copyFile(PYKOT_LOCATION, fname)
-    echo &"# {fname} was copied to the current folder"
+  if existsDir(PYKOT_DIR_LOCATION):
+    copyDir(PYKOT_DIR_LOCATION, "lib/")
+    writeFile("config.nims", """switch("path", "lib")""" & "\n")
+    echo "# the pykot lib. was copied to the current folder"
     result = EXIT_CODE_OK
-  else:    # not found in the local file system
-    let text = get_page(PYKOT_URL)
-    if text == "":
-      echo &"# Warning! {PYKOT_URL} couldn't be downloaded"
-      result = 1
-    else:
-      writeFile(fname, text)
-      echo &"# {fname} was downloaded"
-      result = EXIT_CODE_OK
+  else:
+    result = 1
 
 proc nimble(name=BASIC): int =
   let fname = &"{name}.nimble"
