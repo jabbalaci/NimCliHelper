@@ -142,32 +142,35 @@ proc get_simple_cmd_output(cmd: string): string =
   # Execute a simple external command and get its output.
   execProcess(cmd)
 
-proc compile(args: seq[string], output = true, release = false, small = false): int =
+proc compile(args: seq[string], output = true, release = false,
+             small = false, strip = false): int =
   var
     options = ""
     src: string
     cmd: string
 
   if not output:
-      options = "--hints:off --verbosity:0"
+    options = "--hints:off --verbosity:0"
   try:
-      src = args[1]    # We need boundChecks for this! (added to config.nims)
+    src = args[1]    # We need boundChecks for this! (added to config.nims)
   except:
-      stderr.writeLine "Error: provide the source file too!"
-      stderr.writeLine "Tip: rod c <input.nim>"
-      return 1
+    stderr.writeLine "Error: provide the source file too!"
+    stderr.writeLine "Tip: rod c <input.nim>"
+    return 1
   # else
   cmd = &"nim {options} c {src}"
   if release:
-      cmd = &"nim {options} c -d:release {src}"
+    cmd = &"nim {options} c -d:release {src}"
   if small:
-      cmd = &"nim {options} c -d:release --opt:size {src}"
+    cmd = &"nim {options} c -d:release --opt:size {src}"
+  if strip:
+    cmd = &"nim {options} c -d:release --opt:size --passL:-s {src}"
   #
   execute_command(cmd.split)
 
-proc strip_exe(exe: string): int =
-  let cmd = &"strip -s {exe}"
-  execute_command(cmd.split, verify=true)
+# proc strip_exe(exe: string): int =
+  # let cmd = &"strip -s {exe}"
+  # execute_command(cmd.split, verify=true)
 
 proc upx_exe(exe: string): int =
   let cmd = &"upx --best {exe}"
@@ -184,9 +187,10 @@ func get_exe_name(sourceFileName: string): string =
     exe
 
 proc small2(args: seq[string]): int =
-  discard small1(args)
-  let exe = get_exe_name(args[1])
-  strip_exe(exe)
+  compile(args, release=true, small=true, strip=true)
+  # discard small1(args)
+  # let exe = get_exe_name(args[1])
+  # strip_exe(exe)
 
 proc small3(args: seq[string]): int =
   discard small2(args)
