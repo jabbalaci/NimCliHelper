@@ -1,9 +1,15 @@
-import json
-import os
-import osproc
-import sequtils
-import strformat
-import strutils
+import
+  algorithm,
+  browsers,
+  httpclient,
+  json,
+  os,
+  osproc,
+  rdstdin,
+  sequtils,
+  strformat,
+  strutils,
+  tables
 
 func lstrip(s: string, chars: string): string =
   # Strips leading chars from s and returns the resulting string.
@@ -20,7 +26,7 @@ func rstrip(s: string, chars: string): string =
   s.strip(leading=false, trailing=true, chars=bs)
 
 const
-  VERSION = "0.1.7"
+  VERSION = "0.1.8"
   REQUIRED_NIM_VERSION = "nim >= 0.19.0"    # goes in the .nimble file
   BASIC = "basic"
   EXIT_CODE_OK = 0
@@ -80,6 +86,7 @@ sm1         nim c -d:release --opt:size           small EXE [alias: small1]
 sm2         sm1 + strip                           smaller EXE [alias: small2]
 sm3         sm2 + upx                             smallest EXE [alias: small3]
 ver         nim --version                         version info [aliases: v, version]
+i                                                 interactive mode
 h           help                                  more detailed help [alias: -h]
 """.format(VERSION).strip
 
@@ -100,6 +107,23 @@ proc full_help() =
   echo ""
   echo FULL_HELP
 
+proc inputExtra(prompt: string = ""): string =
+  var line: string = ""
+  let val = readLineFromStdin(prompt, line)    # line is modified
+  if not val:
+    raise newException(EOFError, "abort")
+  line
+
+proc http_return_code(url: string): int =
+  try:
+    let
+      client = newHttpClient()
+      r = request(client, url, HttpHead)
+
+    int(code(r))
+  except:
+    -1
+  
 proc which(fname: string): string =
   let
     sep = if defined(windows): ";" else: ":"
@@ -295,6 +319,74 @@ proc add_dependency(): int =
 proc install_dependencies(): int =
   execute_command("nimble install -d".split)
 
+proc interactive() =
+  let
+    d = {
+      "nim": "https://nim-lang.org/",
+      "hq": "https://nim-lang.org/",
+      "blog": "https://nim-lang.org/blog.html",
+      "forum": "https://forum.nim-lang.org/",
+      "github": "https://github.com/nim-lang/nim",
+      "doc": "https://nim-lang.org/documentation.html",
+      "docs": "https://nim-lang.org/documentation.html",
+      "lib": "https://nim-lang.org/docs/lib.html",
+      "stdlib": "https://nim-lang.org/docs/lib.html",
+      "lib2": "https://nim-lang.github.io/Nim/lib.html",    # latest docs from the devel branch
+      "index": "https://nim-lang.org/docs/theindex.html"
+    }.toTable
+    commands = sorted(toSeq(d.keys()), cmp[string])
+
+  proc print_help() =
+    for k, v in d:
+      echo &"{k:12}->    {v}"
+    echo "h, help     ->    help"
+    echo "q           ->    quit"
+    echo "m <module>  ->    open the stable docs of the given stdlib module"
+    echo "m2 <module> ->    open the devel docs of the given stdlib module"
+
+  func is_module_call(s: string): bool =
+    let words = s.splitWhitespace
+    (words.len == 2) and (words[0] in ["m", "m2"])
+
+  echo "interactive mode (press Ctrl+D to quit)"
+  echo ""
+  print_help()
+  
+  while true:
+    echo ""
+    try:
+      let inp = inputExtra(">>> ").strip
+      if inp in d:
+        let url = d[inp]
+        echo &"# {url}"
+        openDefaultBrowser(url)
+      elif inp in ["h", "help"]:
+        print_help()
+      elif inp == "q":
+        break
+      elif is_module_call(inp):
+        const
+          stable = "https://nim-lang.org/docs/$1.html"
+          devel = "https://nim-lang.github.io/Nim/$1.html"
+        let
+          words = inp.splitWhitespace
+          which = words[0]
+          module = words[1]
+          url_template = if which == "m": stable else: devel
+          url = url_template.format(module)
+          code = http_return_code(url)
+
+        if code == 200:
+          echo "# $1 docs".format(if which == "m": "stable" else: "devel")
+          openDefaultBrowser(url)
+        else:
+          echo "# HTTP return code: $1".format(code)
+          echo "# Maybe there is a typo? Or, in the worst case, such a module doesn't exist."
+      else:
+        echo "What?"
+    except EOFError:
+      break
+
 proc process(args: seq[string]): int =
   let
     param = args[0]
@@ -343,6 +435,8 @@ proc process(args: seq[string]): int =
       exit_code = small3(args)
     of "s", "script":
       exit_code = compile_run_delete_exe(args)
+    of "i":
+      interactive()
     else:
       echo "Error: unknown parameter"
       exit_code = 1
