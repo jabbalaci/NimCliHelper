@@ -1,3 +1,5 @@
 switch("boundChecks", "on")
 
-switch("d", "ssl")
+switch("define", "ssl")
+
+switch("passL", "-s")    # strip -s

@@ -96,8 +96,12 @@ pykot       download pykot.nim                    a small Python / Kotlin -like 
 jabba       alap + pykot + nimble                 bundles 3 steps
 """.strip
 
-# hide it, don't force my own library on the others :)
-# pykot       copy pykot.nim .                      copy pykot.nim to the current dir.
+const CONFIG_NIMS = """
+switch("path", "lib")
+
+# switch("define", "ssl")
+# switch("passL", "-s")    # strip -s
+""".strip
 
 proc help() =
     echo HELP
@@ -283,7 +287,7 @@ proc create_basic_file(name=BASIC): int =
 proc copy_pykot(): int =
   if existsDir(PYKOT_DIR_LOCATION):
     copyDir(PYKOT_DIR_LOCATION, "lib/")
-    writeFile("config.nims", """switch("path", "lib")""" & "\n")
+    writeFile("config.nims", CONFIG_NIMS)
     echo "# the pykot lib. was copied to the current folder"
     result = EXIT_CODE_OK
   else:
