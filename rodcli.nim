@@ -26,7 +26,7 @@ func rstrip(s: string, chars: string): string =
   s.strip(leading=false, trailing=true, chars=bs)
 
 const
-  VERSION = "0.1.8"
+  VERSION = "0.1.9"
   REQUIRED_NIM_VERSION = "nim >= 0.19.0"    # goes in the .nimble file
   BASIC = "basic"
   EXIT_CODE_OK = 0
@@ -39,6 +39,7 @@ const
   HOME = getHomeDir().rstrip("/")
   PYKOT_DIR_LOCATION = &"{HOME}/Dropbox/nim/NimPyKot/src"
   VSCODE_NIM_SNIPPET = &"{HOME}/.config/Code/User/snippets/nim.json"
+  PACKAGES_JSON = &"{HOME}/.nimble/packages_official.json"    # update with `nimble update`
 
 const NIMBLE = """
 # Package
@@ -260,6 +261,21 @@ proc compile_run_delete_exe(args: seq[string]): int =
   # else
   return 1
 
+proc get_3rd_party_module_url(module_name: string): string =
+  if not os.existsFile(PACKAGES_JSON):
+    echo &"# Warning: the file {PACKAGES_JSON} doesn't exist"
+    return ""
+  # else, the file exists
+  try:
+    let parsed = parseFile(PACKAGES_JSON)
+
+    for d in parsed:
+      if d["name"].str == module_name:
+        return d["url"].str.strip
+  except:
+    echo &"# Warning: couldn't process the file {PACKAGES_JSON}"
+    return ""
+
 proc create_basic_file(name=BASIC): int =
   let fname = &"{name}.nim"
 
@@ -347,10 +363,15 @@ proc interactive() =
     echo "q           ->    quit"
     echo "m <module>  ->    open the stable docs of the given stdlib module"
     echo "m2 <module> ->    open the devel docs of the given stdlib module"
+    echo "p <module> ->     open 3rd-party module using your local packages.json"
 
   func is_module_call(s: string): bool =
     let words = s.splitWhitespace
     (words.len == 2) and (words[0] in ["m", "m2"])
+
+  func is_3rd_party_package_call(s: string): bool =
+    let words = s.splitWhitespace
+    (words.len == 2) and (words[0] == "p")
 
   echo "interactive mode (press Ctrl+D to quit)"
   echo ""
@@ -368,6 +389,18 @@ proc interactive() =
         print_help()
       elif inp == "q":
         break
+      elif is_3rd_party_package_call(inp):
+        let
+          words = inp.splitWhitespace
+          module = words[1]
+          url = get_3rd_party_module_url(module)
+
+        if url.len == 0:
+          echo "# warning: the module is not found"
+          echo "# tip: run `nimble update` to update your local packages database"
+        else:
+          echo &"# opening {url}"
+          openDefaultBrowser(url)
       elif is_module_call(inp):
         const
           stable = "https://nim-lang.org/docs/$1.html"
