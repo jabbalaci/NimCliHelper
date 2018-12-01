@@ -363,7 +363,7 @@ proc interactive() =
     echo "q           ->    quit"
     echo "m <module>  ->    open the stable docs of the given stdlib module"
     echo "m2 <module> ->    open the devel docs of the given stdlib module"
-    echo "p <module> ->     open 3rd-party module using your local packages.json"
+    echo "p <module>  ->     open 3rd-party module using your local packages.json"
 
   func is_module_call(s: string): bool =
     let words = s.splitWhitespace
