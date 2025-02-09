@@ -1,5 +1,5 @@
 import
-  algorithm,
+  # algorithm,
   browsers,
   httpclient,
   json,
@@ -128,7 +128,7 @@ proc http_return_code(url: string): int =
     int(code(r))
   except:
     -1
-  
+
 proc which(fname: string): string =
   let
     sep = if defined(windows): ";" else: ":"
@@ -136,7 +136,7 @@ proc which(fname: string): string =
 
   for dir in dirs:
     let path = joinPath(dir, fname)
-    if existsFile(path):
+    if fileExists(path):
       return path
   #
   return ""    # not found
@@ -159,7 +159,7 @@ proc execute_command(cmd: seq[string], verify = false, debug = true, sep = false
       echo &"# Warning: the command {prg} was not found"
       echo "# Tip: make sure it's installed and it's in your PATH"
       return 1
-    
+
   if debug:
     echo &"# {cmdString}"
   if sep:
@@ -209,7 +209,7 @@ proc small1(args: seq[string]): int =
   compile(args, release=true, small=true)
 
 func get_exe_name(sourceFileName: string): string =
-  let (dir, exe, ext) = splitFile(sourceFileName)
+  let (_, exe, _) = splitFile(sourceFileName)
   if defined(windows):
     &"{exe}.exe"
   else:
@@ -244,10 +244,10 @@ proc delete_exe(exe: string): bool =
   # Return true if deleting the file was successful.
   # Return false otherwise.
   let ext = splitFile(exe).ext
-  if existsFile(exe) and ext != ".nim":
+  if fileExists(exe) and ext != ".nim":
       # echo &"# remove {exe}"
       removeFile(exe)
-  return not existsFile(exe)
+  return not fileExists(exe)
 
 proc compile_run_delete_exe(args: seq[string]): int =
   var exit_code = compile(args, output=false)
@@ -262,7 +262,7 @@ proc compile_run_delete_exe(args: seq[string]): int =
   return 1
 
 proc get_3rd_party_module_url(module_name: string): string =
-  if not os.existsFile(PACKAGES_JSON):
+  if not os.fileExists(PACKAGES_JSON):
     echo &"# Warning: the file {PACKAGES_JSON} doesn't exist"
     return ""
   # else, the file exists
@@ -279,11 +279,11 @@ proc get_3rd_party_module_url(module_name: string): string =
 proc create_basic_file(name=BASIC): int =
   let fname = &"{name}.nim"
 
-  if existsFile(fname):
+  if fileExists(fname):
     echo &"# Warning: {fname} already exists"
     return 1
   # else, if basic.nim doest't exist
-  if not existsFile(VSCODE_NIM_SNIPPET):
+  if not fileExists(VSCODE_NIM_SNIPPET):
     writeFile(fname, BASIC_NIM_SOURCE)
     echo &"# a basic {fname} was created"
   else:
@@ -299,9 +299,9 @@ proc create_basic_file(name=BASIC): int =
       echo &"# Warning: couldn't process the file {VSCODE_NIM_SNIPPET}"
       writeFile(fname, BASIC_NIM_SOURCE)
       echo &"# a basic {fname} was created"
-  
+
 proc copy_pykot(): int =
-  if existsDir(PYKOT_DIR_LOCATION):
+  if dirExists(PYKOT_DIR_LOCATION):
     copyDir(PYKOT_DIR_LOCATION, "lib/")
     writeFile("config.nims", CONFIG_NIMS)
     echo "# the pykot lib. was copied to the current folder"
@@ -312,15 +312,15 @@ proc copy_pykot(): int =
 proc nimble(name=BASIC): int =
   let fname = &"{name}.nimble"
 
-  if existsFile(fname):
+  if fileExists(fname):
     echo &"# Warning: {fname} already exists"
     return 1
-  
+
   # else, the .nimble file doesn't exist
   var text = NIMBLE
   if name != BASIC:
     text = text.replace(BASIC, name)
-  
+
   writeFile(fname, text)
   echo &"# {fname} was created"
   EXIT_CODE_OK
@@ -354,7 +354,7 @@ proc interactive() =
       "lib2": "https://nim-lang.github.io/Nim/lib.html",    # latest docs from the devel branch
       "index": "https://nim-lang.org/docs/theindex.html"
     }.toTable
-    commands = sorted(toSeq(d.keys()), cmp[string])
+    # commands = sorted(toSeq(d.keys()), cmp[string])
 
   proc print_help() =
     for k, v in d:
@@ -376,7 +376,7 @@ proc interactive() =
   echo "interactive mode (press Ctrl+D to quit)"
   echo ""
   print_help()
-  
+
   while true:
     echo ""
     try:
@@ -427,8 +427,8 @@ proc interactive() =
 proc process(args: seq[string]): int =
   let
     param = args[0]
-    params = args[1 .. args.high].join(" ")
-    
+    # params = args[1 .. args.high].join(" ")
+
   var exit_code = 0
 
   case param:

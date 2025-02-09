@@ -108,3 +108,5 @@ rodcli
 rodcli.exe
 compile.sh
 backup
+nimble.develop
+nimble.paths
