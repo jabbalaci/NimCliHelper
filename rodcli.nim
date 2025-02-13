@@ -26,8 +26,8 @@ func rstrip(s: string, chars: string): string =
   s.strip(leading=false, trailing=true, chars=bs)
 
 const
-  VERSION = "0.1.9"
-  REQUIRED_NIM_VERSION = "nim >= 0.19.0"    # goes in the .nimble file
+  VERSION = "0.2.0"
+  REQUIRED_NIM_VERSION = "nim >= 2.2.0"    # goes in the .nimble file
   BASIC = "basic"
   EXIT_CODE_OK = 0
   EDITOR =
@@ -35,9 +35,9 @@ const
       "notepad++"    # to use it, add Notepad++'s folder to the PATH
                      # I wanted to use "code" here, but Windows didn't want to launch it
     else:
-      "vim"
+      getEnv("EDITOR", "vim")
   HOME = getHomeDir().rstrip("/")
-  PYKOT_DIR_LOCATION = &"{HOME}/Dropbox/nim/NimPyKot/src"
+  PYKOT_DIR_LOCATION = &"{HOME}/Dropbox/nim/_projects/NimPyKot/src"
   VSCODE_NIM_SNIPPET = &"{HOME}/.config/Code/User/snippets/nim.json"
   PACKAGES_JSON = &"{HOME}/.nimble/packages_official.json"    # update with `nimble update`
 
@@ -94,7 +94,8 @@ h           help                                  more detailed help [alias: -h]
 const FULL_HELP = """
 alap        create alap.nim                       like basic.nim but with a different name
 pykot       download pykot.nim                    a small Python / Kotlin -like library
-jabba       alap + pykot + nimble                 bundles 3 steps
+makefile    create Makefile                       for easy compilation
+jabba       alap + pykot + nimble + makefile      Jabba's bundle
 """.strip
 
 const CONFIG_NIMS = """
@@ -104,6 +105,14 @@ switch("path", "lib")
 # switch("passL", "-s")    # strip -s
 """.strip
 
+const MAKEFILE = """
+cat:
+\tcat Makefile
+
+c:
+\tnim c alap.nim
+""".lstrip("\n").replace(r"\t", "\t")
+
 proc help() =
     echo HELP
 
@@ -111,6 +120,8 @@ proc full_help() =
   echo HELP
   echo ""
   echo FULL_HELP
+
+
 
 proc inputExtra(prompt: string = ""): string =
   var line: string = ""
@@ -290,7 +301,7 @@ proc create_basic_file(name=BASIC): int =
     try:
       let
         parsed = parseFile(VSCODE_NIM_SNIPPET)
-        snippet = parsed["alap"]["body"].mapIt(it.str).join("\n").replace("$0", "")
+        snippet = parsed["alap for Nim"]["body"].mapIt(it.str).join("\n").replace("$0", "")
 
       writeFile(fname, snippet)
       echo &"# {fname} was created using your VS Code Nim snippet"
@@ -299,6 +310,17 @@ proc create_basic_file(name=BASIC): int =
       echo &"# Warning: couldn't process the file {VSCODE_NIM_SNIPPET}"
       writeFile(fname, BASIC_NIM_SOURCE)
       echo &"# a basic {fname} was created"
+
+proc create_makefile(): int =
+  let fname = "Makefile"
+
+  if fileExists(fname):
+    echo &"# Warning: {fname} already exists"
+    return 1
+  # else, if Makefile doest't exist
+  writeFile(fname, MAKEFILE)
+  echo "# Makefile was created"
+  result = EXIT_CODE_OK
 
 proc copy_pykot(): int =
   if dirExists(PYKOT_DIR_LOCATION):
@@ -445,10 +467,13 @@ proc process(args: seq[string]): int =
     of "init":
       discard create_basic_file()
       discard nimble()
+    of "makefile":
+      discard create_makefile()
     of "jabba":    # an undocumented option for the author of the package :)
       discard create_basic_file(name="alap")
       discard copy_pykot()
       discard nimble(name="alap")
+      discard create_makefile()
     of "ad":
       exit_code = add_dependency()
     of "id":
