@@ -111,6 +111,9 @@ cat:
 
 c:
 \tnim c alap.nim
+
+rel:
+\tnim c -d:release alap.nim
 """.lstrip("\n").replace(r"\t", "\t")
 
 proc help() =
