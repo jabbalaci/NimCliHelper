@@ -110,3 +110,4 @@ compile.sh
 backup
 nimble.develop
 nimble.paths
+nimbledeps

@@ -304,7 +304,7 @@ proc create_basic_file(name=BASIC): int =
     try:
       let
         parsed = parseFile(VSCODE_NIM_SNIPPET)
-        snippet = parsed["alap for Nim"]["body"].mapIt(it.str).join("\n").replace("$0", "")
+        snippet = parsed["alap"]["body"].mapIt(it.str).join("\n").replace("$0", "")
 
       writeFile(fname, snippet)
       echo &"# {fname} was created using your VS Code Nim snippet"

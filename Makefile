@@ -8,7 +8,8 @@ c: setup
 	nim c rodcli.nim
 
 rel: setup
-	nim c -d:release rodcli.nim
+	nim c -d:release -d:quick --opt:size rodcli.nim
+	strip -s rodcli
 
 install:
 	nimble install
