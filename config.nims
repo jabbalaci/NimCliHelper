@@ -1,3 +1,5 @@
+switch("path", "$projectDir/src")
+
 switch("boundChecks", "on")
 
 switch("define", "ssl")

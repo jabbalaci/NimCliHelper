@@ -1,32 +1,25 @@
+#!/usr/bin/env nimbang
+#off:nimbang-args c -d:release
+#nimbang-settings hideDebugInfo
+
 import
-  # algorithm,
-  browsers,
-  httpclient,
-  json,
-  os,
-  osproc,
-  rdstdin,
-  sequtils,
-  strformat,
-  strutils,
-  tables
+  std/browsers,
+  std/httpclient,
+  std/json,
+  std/os,
+  std/osproc,
+  std/rdstdin,
+  std/sequtils,
+  std/strformat,
+  std/strutils,
+  std/tables
 
-func lstrip(s: string, chars: string): string =
-  # Strips leading chars from s and returns the resulting string.
-  var bs: set[char] = {}
-  for c in chars:
-    bs = bs + {c}
-  s.strip(leading=true, trailing=false, chars=bs)
-
-func rstrip(s: string, chars: string): string =
-  # Strips trailing chars from s and returns the resulting string.
-  var bs: set[char] = {}
-  for c in chars:
-    bs = bs + {c}
-  s.strip(leading=false, trailing=true, chars=bs)
+import
+  lib/jfs,
+  lib/jstring
 
 const
-  VERSION = "0.2.0"
+  VERSION = "0.2.2"
   REQUIRED_NIM_VERSION = "nim >= 2.2.0"    # goes in the .nimble file
   BASIC = "basic"
   EXIT_CODE_OK = 0
@@ -72,31 +65,23 @@ RodCli, a Nim CLI Helper v$1
 ===============================
  option               what it does                                notes
 --------    ----------------------------------    ----------------------------------------
-init        bundles the indented 2 steps below    initialize a project folder
-  basic     create basic.nim                      create a basic skeleton source file
-  nimble    simplified nimble init                create a simple basic.nimble file
-ad          edit .nimble                          add dependency
+init        bundles the indented 2 steps below    initialize a project folder ("rod init [name]")
+  basic     create a basic source file            "rod basic [name]", where [name] is optional
+  nimble    simplified nimble init                create a simple .nimble file
+ed          edit .nimble                          edit the .nimble file
+add         add dependency                        "rod add <pkg>" calls "nimble add <pkg>"
 id          nimble install -d                     install dependencies (and nothing else)
                                                   (like `pip install -r requirements.txt`)
-c           nim c                                 compile (debug) [alias: compile]
-cr          nim c -r                              compile and run
-s                                                 compile, run, then delete the exe, i.e.
-                                                  run it as if it were a script [alias: script]
-rel         nim c -d:release                      compile [alias: release]
-sm1         nim c -d:release --opt:size           small EXE [alias: small1]
-sm2         sm1 + strip                           smaller EXE [alias: small2]
-sm3         sm2 + upx                             smallest EXE [alias: small3]
 ver         nim --version                         version info [aliases: v, version]
 i                                                 interactive mode
-h           help                                  more detailed help [alias: -h]
-""".format(VERSION).strip
+h                                                 help
 
-const FULL_HELP = """
-alap        create alap.nim                       like basic.nim but with a different name
-pykot       download pykot.nim                    a small Python / Kotlin -like library
-makefile    create Makefile                       for easy compilation
-jabba       alap + pykot + nimble + makefile      Jabba's bundle
-""".strip
+alap        create alap.nim                       "rod alap [name]", where [name] is optional
+pykot       download pykot.nim                    a small Python/Kotlin -like library
+make        create Makefile                       for easy compilation
+gi          create .gitignore                     create the .gitignore file
+jabba       alap+pykot+nimble+make+gi             Jabba's bundle
+""".format(VERSION).strip
 
 const CONFIG_NIMS = """
 switch("path", "lib")
@@ -116,15 +101,14 @@ rel:
 \tnim c -d:release alap.nim
 """.lstrip("\n").replace(r"\t", "\t")
 
+const GITIGNORE = """
+backup/
+nimble.paths
+nimbledeps
+""".strip
+
 proc help() =
-    echo HELP
-
-proc full_help() =
   echo HELP
-  echo ""
-  echo FULL_HELP
-
-
 
 proc inputExtra(prompt: string = ""): string =
   var line: string = ""
@@ -142,18 +126,6 @@ proc http_return_code(url: string): int =
     int(code(r))
   except:
     -1
-
-proc which(fname: string): string =
-  let
-    sep = if defined(windows): ";" else: ":"
-    dirs = getEnv("PATH").split(sep)
-
-  for dir in dirs:
-    let path = joinPath(dir, fname)
-    if fileExists(path):
-      return path
-  #
-  return ""    # not found
 
 proc execute_command(cmd: seq[string], verify = false, debug = true, sep = false): int =
   # Execute a simple external command and return its exit status.
@@ -185,95 +157,8 @@ proc get_simple_cmd_output(cmd: string): string =
   # Execute a simple external command and get its output.
   execProcess(cmd)
 
-proc compile(args: seq[string], output = true, release = false,
-             small = false, strip = false): int =
-  var
-    options = ""
-    src: string
-    cmd: string
-
-  if not output:
-    options = "--hints:off --verbosity:0"
-  try:
-    src = args[1]    # We need boundChecks for this! (added to config.nims)
-  except:
-    stderr.writeLine "Error: provide the source file too!"
-    stderr.writeLine "Tip: rod c <input.nim>"
-    return 1
-  # else
-  cmd = &"nim {options} c {src}"
-  if release:
-    cmd = &"nim {options} c -d:release {src}"
-  if small:
-    cmd = &"nim {options} c -d:release --opt:size {src}"
-  if strip:
-    cmd = &"nim {options} c -d:release --opt:size --passL:-s {src}"
-  #
-  execute_command(cmd.split)
-
-# proc strip_exe(exe: string): int =
-  # let cmd = &"strip -s {exe}"
-  # execute_command(cmd.split, verify=true)
-
-proc upx_exe(exe: string): int =
-  let cmd = &"upx --best {exe}"
-  execute_command(cmd.split, verify=true)
-
-proc small1(args: seq[string]): int =
-  compile(args, release=true, small=true)
-
-func get_exe_name(sourceFileName: string): string =
-  let (_, exe, _) = splitFile(sourceFileName)
-  if defined(windows):
-    &"{exe}.exe"
-  else:
-    exe
-
-proc small2(args: seq[string]): int =
-  compile(args, release=true, small=true, strip=true)
-  # discard small1(args)
-  # let exe = get_exe_name(args[1])
-  # strip_exe(exe)
-
-proc small3(args: seq[string]): int =
-  discard small2(args)
-  let exe = get_exe_name(args[1])
-  upx_exe(exe)
-
 proc version_info() =
   echo get_simple_cmd_output("nim --version").splitlines()[0]
-
-proc run_exe(exe: string, params: seq[string]): int =
-  let
-    params = params.join()
-    cmd =
-      if defined(windows):
-        &"{exe} {params}"
-      else:
-        &"./{exe} {params}"
-  #
-  execute_command(cmd.split, sep=true)
-
-proc delete_exe(exe: string): bool =
-  # Return true if deleting the file was successful.
-  # Return false otherwise.
-  let ext = splitFile(exe).ext
-  if fileExists(exe) and ext != ".nim":
-      # echo &"# remove {exe}"
-      removeFile(exe)
-  return not fileExists(exe)
-
-proc compile_run_delete_exe(args: seq[string]): int =
-  var exit_code = compile(args, output=false)
-  if exit_code != EXIT_CODE_OK:
-      return exit_code
-  # else
-  let exe = get_exe_name(args[1])
-  discard run_exe(exe, args[2 .. args.high])
-  if delete_exe(exe):    # deleting the file was successful
-    return EXIT_CODE_OK
-  # else
-  return 1
 
 proc get_3rd_party_module_url(module_name: string): string =
   if not os.fileExists(PACKAGES_JSON):
@@ -290,7 +175,7 @@ proc get_3rd_party_module_url(module_name: string): string =
     echo &"# Warning: couldn't process the file {PACKAGES_JSON}"
     return ""
 
-proc create_basic_file(name=BASIC): int =
+proc create_basic_file(name=BASIC, executable=false): int =
   let fname = &"{name}.nim"
 
   if fileExists(fname):
@@ -299,6 +184,8 @@ proc create_basic_file(name=BASIC): int =
   # else, if basic.nim doest't exist
   if not fileExists(VSCODE_NIM_SNIPPET):
     writeFile(fname, BASIC_NIM_SOURCE)
+    if executable:
+      make_executable(fname)
     echo &"# a basic {fname} was created"
   else:
     try:
@@ -307,11 +194,15 @@ proc create_basic_file(name=BASIC): int =
         snippet = parsed["alap"]["body"].mapIt(it.str).join("\n").replace("$0", "")
 
       writeFile(fname, snippet)
+      if executable:
+        make_executable(fname)
       echo &"# {fname} was created using your VS Code Nim snippet"
       result = EXIT_CODE_OK
     except:
       echo &"# Warning: couldn't process the file {VSCODE_NIM_SNIPPET}"
       writeFile(fname, BASIC_NIM_SOURCE)
+      if executable:
+        make_executable(fname)
       echo &"# a basic {fname} was created"
 
 proc create_makefile(): int =
@@ -320,9 +211,20 @@ proc create_makefile(): int =
   if fileExists(fname):
     echo &"# Warning: {fname} already exists"
     return 1
-  # else, if Makefile doest't exist
+  # else, if Makefile doesn't exist
   writeFile(fname, MAKEFILE)
   echo "# Makefile was created"
+  result = EXIT_CODE_OK
+
+proc create_gitignore(): int =
+  let fname = ".gitignore"
+
+  if fileExists(fname):
+    echo &"# Warning: {fname} already exists"
+    return 1
+  # else, if .gitignore doesn't exist
+  writeFile(fname, GITIGNORE)
+  echo "# .gitignore was created"
   result = EXIT_CODE_OK
 
 proc copy_pykot(): int =
@@ -350,8 +252,8 @@ proc nimble(name=BASIC): int =
   echo &"# {fname} was created"
   EXIT_CODE_OK
 
-proc add_dependency(): int =
-  let files = toSeq(walkFiles("*.nimble"))
+proc edit_nimble_file(): int =
+  let files = walkFiles("*.nimble").toSeq
   if files.len != 1:
     echo "Error: one (and only one) .nimble file is required"
     return 1
@@ -363,6 +265,10 @@ proc add_dependency(): int =
 
 proc install_dependencies(): int =
   execute_command("nimble install -d".split)
+
+proc add_dependency(pkg_name: string): int =
+  let cmd = &"nimble add {pkg_name}"
+  execute_command(cmd.split)
 
 proc interactive() =
   let
@@ -459,49 +365,48 @@ proc process(args: seq[string]): int =
   case param:
     of "ver", "v", "version":
       version_info()
-    of "h", "-h":
-      full_help()
     of "basic", "alap":
-      exit_code = create_basic_file(name=param)
-    of "pykot":    # visible only in fullhelp
+      let name = if args.len == 2: args[1] else: param
+      exit_code = create_basic_file(name=name, executable=true)
+    of "pykot":
       exit_code = copy_pykot()
     of "nimble":
-      exit_code = nimble()
+      let name = block:
+        let files = walkFiles("*.nim").toSeq
+        if files.len != 1:
+          "basic"
+        else:
+          files[0].changeFileExt("")
+      exit_code = nimble(name=name)
     of "init":
-      discard create_basic_file()
-      discard nimble()
-    of "makefile":
+      let name = if args.len == 2: args[1] else: "basic"
+      discard create_basic_file(name=name, executable=true)
+      discard nimble(name=name)
+    of "make":
       discard create_makefile()
-    of "jabba":    # an undocumented option for the author of the package :)
-      discard create_basic_file(name="alap")
+    of "gi":
+      discard create_gitignore()
+    of "jabba":    # for the author of the package :)
+      discard create_basic_file(name="alap", executable=true)
       discard copy_pykot()
       discard nimble(name="alap")
       discard create_makefile()
-    of "ad":
-      exit_code = add_dependency()
+      discard create_gitignore()
+    of "ed":
+      exit_code = edit_nimble_file()
+    of "add":
+      if args.len != 2:
+        stderr.writeLine "Error: provide a single package name"
+        return 1
+      # else:
+      let pkg_name = args[1]
+      exit_code = add_dependency(pkg_name)
     of "id":
       exit_code = install_dependencies()
-    of "c", "compile":
-      exit_code = compile(args)
-    of "cr":
-      exit_code = compile(args)
-      if exit_code != EXIT_CODE_OK:
-          return exit_code
-      # else
-      let exe = get_exe_name(args[1])
-      exit_code = run_exe(exe, args[2 .. args.high])
-    of "rel", "release":
-      exit_code = compile(args, release=true)
-    of "sm1", "small1":
-      exit_code = small1(args)
-    of "sm2", "small2":
-      exit_code = small2(args)
-    of "sm3", "small3":
-      exit_code = small3(args)
-    of "s", "script":
-      exit_code = compile_run_delete_exe(args)
     of "i":
       interactive()
+    of "h":
+      help()
     else:
       echo "Error: unknown parameter"
       exit_code = 1

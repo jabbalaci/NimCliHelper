@@ -1,3 +1,5 @@
+fname := rodcli.nim
+
 cat:
 	cat Makefile
 
@@ -5,11 +7,13 @@ setup:
 	nimble setup
 
 c: setup
-	nim c rodcli.nim
+	nim c ${fname}
 
 rel: setup
-	nim c -d:release -d:quick --opt:size rodcli.nim
-	strip -s rodcli
+	nim c -d:release ${fname}
+
+small: setup
+	nim c -d:release --opt:size --passL:-s ${fname}
 
 install:
 	nimble install

@@ -7,28 +7,30 @@ Help
 ----
 
 ```
-$ rodcli
-RodCli, a Nim CLI Helper v0.1.6
+$ rod
+RodCli, a Nim CLI Helper v0.2.2
 ===============================
  option               what it does                                notes
 --------    ----------------------------------    ----------------------------------------
-init        bundles the indented 2 steps below    initialize a project folder
-  basic     create basic.nim                      create a basic skeleton source file
-  nimble    simplified nimble init                create a simple basic.nimble file
-ad          edit .nimble                          add dependency
+init        bundles the indented 2 steps below    initialize a project folder ("rod init [name]")
+  basic     create a basic source file            "rod basic [name]", where [name] is optional
+  nimble    simplified nimble init                create a simple .nimble file
+ed          edit .nimble                          edit the .nimble file
+add         add dependency                        "rod add <pkg>" calls "nimble add <pkg>"
 id          nimble install -d                     install dependencies (and nothing else)
                                                   (like `pip install -r requirements.txt`)
-c           nim c                                 compile (debug) [alias: compile]
-cr          nim c -r                              compile and run
-s                                                 compile, run, then delete the exe, i.e.
-                                                  run it as if it were a script [alias: script]
-rel         nim c -d:release                      compile [alias: release]
-sm1         nim c -d:release --opt:size           small EXE [alias: small1]
-sm2         sm1 + strip                           smaller EXE [alias: small2]
-sm3         sm2 + upx                             smallest EXE [alias: small3]
 ver         nim --version                         version info [aliases: v, version]
-h           help                                  more detailed help [alias: -h]
+i                                                 interactive mode
+h                                                 help
+
+alap        create alap.nim                       "rod alap [name]", where [name] is optional
+pykot       download pykot.nim                    a small Python/Kotlin -like library
+make        create Makefile                       for easy compilation
+gi          create .gitignore                     create the .gitignore file
+jabba       alap+pykot+nimble+make+gi             Jabba's bundle
 ```
+
+I suggest putting an alias on the binary `rodcli`. I use the alias `rod`.
 
 Usage
 -----
@@ -42,12 +44,6 @@ $ rodcli init
 It creates two files:
 * a simple skeleton for your source code called `basic.nim`
 * a simplified `basic.nimble`
-
-Compile and run:
-
-```
-$ rodcli cr basic.nim
-```
 
 Installation
 ------------
@@ -73,16 +69,6 @@ I couldn't try it.
 Windows support
 ---------------
 
-Windows is a first-class citizen, thus RodCli works under Windows too.
+RodCli works under Windows too.
 
-For editing a file, Notepad++ is used. If you need this feature, then add the
-folder of Notepad++ to the PATH.
-
-For shrinking the size of the EXE, `strip` and `upx` are used.
-* If you install Nim from the official home page and run `finish.exe`
-(see the [docs](https://nim-lang.org/install_windows.html)), then you'll
-be asked if you want to install MingW, a C compiler. Say yes. On my
-system `strip.exe` was installed here: `C:\nim\dist\mingw64\bin\strip.exe`.
-I had to add the folder `C:\nim\dist\mingw64\bin` to my PATH.
-* You can download UPX from [here](https://github.com/upx/upx/releases). Put `upx.exe`
-somewhere in your PATH.
+For editing a file, Notepad++ is used. If you need this feature, then add the folder of Notepad++ to the PATH.

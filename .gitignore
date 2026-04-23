@@ -104,10 +104,10 @@ venv.bak/
 .mypy_cache/
 
 # nim
+backup/
+python.old/
 rodcli
 rodcli.exe
-compile.sh
-backup
 nimble.develop
 nimble.paths
 nimbledeps
