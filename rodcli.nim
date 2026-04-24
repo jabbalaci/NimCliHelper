@@ -19,7 +19,7 @@ import
   lib/jstring
 
 const
-  VERSION = "0.2.2"
+  VERSION = "0.2.3"
   REQUIRED_NIM_VERSION = "nim >= 2.2.0"    # goes in the .nimble file
   BASIC = "basic"
   EXIT_CODE_OK = 0
@@ -72,6 +72,8 @@ ed          edit .nimble                          edit the .nimble file
 add         add dependency                        "rod add <pkg>" calls "nimble add <pkg>"
 id          nimble install -d                     install dependencies (and nothing else)
                                                   (like `pip install -r requirements.txt`)
+s                                                 compile, run, then delete the exe, i.e.
+                                                  run it as if it were a script [alias: script]
 ver         nim --version                         version info [aliases: v, version]
 i                                                 interactive mode
 h                                                 help
@@ -159,6 +161,71 @@ proc get_simple_cmd_output(cmd: string): string =
 
 proc version_info() =
   echo get_simple_cmd_output("nim --version").splitlines()[0]
+
+proc compile(args: seq[string], output = true, release = false,
+             small = false, strip = false): int =
+  var
+    options = ""
+    src: string
+    cmd: string
+
+  if not output:
+    options = "--hints:off --warnings:off"
+  try:
+    src = args[1]    # We need boundChecks for this! (added to config.nims)
+  except:
+    stderr.writeLine "Error: provide the source file too!"
+    stderr.writeLine "Tip: rod c <input.nim>"
+    return 1
+  # else
+  cmd = &"nim {options} c {src}"
+  if release:
+    cmd = &"nim {options} c -d:release {src}"
+  if small:
+    cmd = &"nim {options} c -d:release --opt:size {src}"
+  if strip:
+    cmd = &"nim {options} c -d:release --opt:size --passL:-s {src}"
+  #
+  execute_command(cmd.split, debug=false)
+
+func get_exe_name(sourceFileName: string): string =
+  let (_, exe, _) = splitFile(sourceFileName)
+  if defined(windows):
+    &"{exe}.exe"
+  else:
+    exe
+
+proc run_exe(exe: string, params: seq[string]): int =
+  let
+    params = params.join()
+    cmd =
+      if defined(windows):
+        &"{exe} {params}"
+      else:
+        &"./{exe} {params}"
+  #
+  execute_command(cmd.split, debug=false, sep=false)
+
+proc delete_exe(exe: string): bool =
+  # Return true if deleting the file was successful.
+  # Return false otherwise.
+  let ext = splitFile(exe).ext
+  if fileExists(exe) and ext != ".nim":
+      # echo &"# remove {exe}"
+      removeFile(exe)
+  return not fileExists(exe)
+
+proc compile_run_delete_exe(args: seq[string]): int =
+  var exit_code = compile(args, output=false)
+  if exit_code != EXIT_CODE_OK:
+      return exit_code
+  # else
+  let exe = get_exe_name(args[1])
+  discard run_exe(exe, args[2 .. args.high])
+  if delete_exe(exe):    # deleting the file was successful
+    return EXIT_CODE_OK
+  # else
+  return 1
 
 proc get_3rd_party_module_url(module_name: string): string =
   if not os.fileExists(PACKAGES_JSON):
@@ -403,6 +470,8 @@ proc process(args: seq[string]): int =
       exit_code = add_dependency(pkg_name)
     of "id":
       exit_code = install_dependencies()
+    of "s", "script":
+      exit_code = compile_run_delete_exe(args)
     of "i":
       interactive()
     of "h":

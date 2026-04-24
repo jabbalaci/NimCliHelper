@@ -8,7 +8,7 @@ Help
 
 ```
 $ rod
-RodCli, a Nim CLI Helper v0.2.2
+RodCli, a Nim CLI Helper v0.2.3
 ===============================
  option               what it does                                notes
 --------    ----------------------------------    ----------------------------------------
@@ -19,6 +19,8 @@ ed          edit .nimble                          edit the .nimble file
 add         add dependency                        "rod add <pkg>" calls "nimble add <pkg>"
 id          nimble install -d                     install dependencies (and nothing else)
                                                   (like `pip install -r requirements.txt`)
+s                                                 compile, run, then delete the exe, i.e.
+                                                  run it as if it were a script [alias: script]
 ver         nim --version                         version info [aliases: v, version]
 i                                                 interactive mode
 h                                                 help
