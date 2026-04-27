@@ -19,7 +19,7 @@ import
   lib/jstring
 
 const
-  VERSION = "0.2.3"
+  VERSION = "0.2.4"
   REQUIRED_NIM_VERSION = "nim >= 2.2.0"    # goes in the .nimble file
   BASIC = "basic"
   EXIT_CODE_OK = 0
@@ -82,6 +82,7 @@ alap        create alap.nim                       "rod alap [name]", where [name
 pykot       download pykot.nim                    a small Python/Kotlin -like library
 make        create Makefile                       for easy compilation
 gi          create .gitignore                     create the .gitignore file
+config      create config.nims                    create the config.nims file
 jabba       alap+pykot+nimble+make+gi             Jabba's bundle
 """.format(VERSION).strip
 
@@ -294,6 +295,17 @@ proc create_gitignore(): int =
   echo "# .gitignore was created"
   result = EXIT_CODE_OK
 
+proc create_config(): int =
+  let fname = "config.nims"
+
+  if fileExists(fname):
+    echo &"# Warning: {fname} already exists"
+    return 1
+  # else, if config.nims doesn't exist
+  writeFile(fname, CONFIG_NIMS)
+  echo "# config.nims was created"
+  result = EXIT_CODE_OK
+
 proc copy_pykot(): int =
   if dirExists(PYKOT_DIR_LOCATION):
     copyDir(PYKOT_DIR_LOCATION, "lib/")
@@ -453,6 +465,8 @@ proc process(args: seq[string]): int =
       discard create_makefile()
     of "gi":
       discard create_gitignore()
+    of "config":
+      discard create_config()
     of "jabba":    # for the author of the package :)
       discard create_basic_file(name="alap", executable=true)
       discard copy_pykot()

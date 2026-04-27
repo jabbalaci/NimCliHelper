@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.2.3"
+version       = "0.2.4"
 author        = "Laszlo Szathmary <jabba.laci@gmail.com>"
 description   = "making Nim development easier in the command-line"
 license       = "MIT"
